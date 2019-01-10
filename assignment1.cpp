@@ -73,7 +73,7 @@ vector<double> back_substitution(vector<vector<double> > mat)
 {
     int n_row = mat.size();
     int n_col = mat[0].size();
-    cout<<n_row<<","<<n_col<<endl;
+    //cout<<n_row<<","<<n_col<<endl;
     vector<double> x(n_row, 0.0);
     for(int i = n_row-1; i >=0 ; i--)
     {
@@ -149,7 +149,7 @@ vector<vector<double> > create_data_aug_mat(vector<vector<double> > full_mat, ve
         {
             int col_pos = N-2;
             int row_pos = indices[i] - (N-2);
-            mat[i][i] = full_mat[row_pos][col_pos];
+            mat[row_pos][i] = full_mat[row_pos][col_pos];
         }
     }
     
@@ -194,13 +194,41 @@ int main(int argc, char const *argv[])
     print2D<int>(comb_ind);
     int comb = comb_ind.size();
 
+    cout<<"Computing Basic Solutions"<<endl;
     vector<vector<double> > basic_sols;
     for(int i=0; i<comb; i++)
     {
+        vector<double> sol(n_var, 0.0);
         vector<int> indices = comb_ind[i];
-        vector<vector<double> > mat_test = create_data_aug_mat(eqns, indices);
-        cout<<"PRINT TEST MAT"<<endl;
-        print2D<double>(mat_test);
+        //print1D<int>(indices);
+        vector<vector<double> > mat_aug = create_data_aug_mat(eqns, indices);
+        //print2D<double>(mat_aug);
+        pair<vector<vector<double> >, vector<double> > p = gauss_elemination(mat_aug);
+        
+        for(int j = 0; j < indices.size(); j++)
+            sol[indices[j]] = p.second[j];
+        //print1D<double>(sol);
+        basic_sols.push_back(sol);
     }
+    print2D<double>(basic_sols);
+    cout<<"Computing Basic Feasible Solutions"<<endl;
+    vector<vector<double> > basic_fsols;
+    
+    for(int i = 0; i < basic_sols.size(); i++)
+    {
+       bool flag = true;
+       for(int j = 0; j < basic_sols[0].size(); j++)
+       {
+           if(basic_sols[i][j]<0)
+           {
+                flag = false;
+                break;
+           }
+       }
+       if (flag)
+            basic_fsols.push_back(basic_sols[i]);
+       
+    }
+    print2D<double>(basic_fsols);
     return 0;
 }
