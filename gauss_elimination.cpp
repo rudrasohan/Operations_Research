@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <vector>
 #include <utility>
 
@@ -95,11 +96,12 @@ pair<vector<vector<double> >, vector<double> > gauss_elemination(vector<vector<d
         {
             bool column_change = true;
             pair<double,int> max (mat[k][l], k);
+            max.first = abs(max.first);
             for(int i = k+1; i < n_row; i++)
             {
-                if(mat[i][l] != 0 && max.first<mat[i][l])
+                if(mat[i][l] != 0 && max.first<abs(mat[i][l]))
                 {
-                    max.first = mat[i][l];
+                    max.first = abs(mat[i][l]);
                     max.second = i;
                     column_change = false;
                 }
@@ -116,9 +118,23 @@ pair<vector<vector<double> >, vector<double> > gauss_elemination(vector<vector<d
 
 int main(int argc, char const *argv[])
 {
-    vector<vector<double> > vect{{3.0, 2.0,-4.0, 3.0}, 
-                                 {2.0, 3.0, 3.0, 15.0}, 
-                                {5.0, -3, 1.0, 14.0}};
+    vector<vector<double> > vect;
+    cout<<"Enter the number of Equations"<<endl;
+    int n, r;
+    cin>>n;
+    cout<<"Enter the number of variables"<<endl;
+    cin>>r;
+    cout<<"a1x1 + a2x2 + ... + arxr = C"<<endl;
+    for(int i = 0; i < n; i++)
+    {
+        vector<double> arr(r+1, 0);
+        for(int j = 0; j < r; j++)
+            cin>>arr[j];
+        cout<<"enter C"<<endl;
+        cin>>arr[r]; 
+        cout<<"Got Eqn: "<<i<<endl;
+        vect.push_back(arr);
+    }
     cout <<"Initial Mat"<<endl;
     print2D(vect);
     pair<vector<vector<double> >, vector<double> > p = gauss_elemination(vect);

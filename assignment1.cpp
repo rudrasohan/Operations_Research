@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <vector>
 #include <utility>
 
@@ -88,11 +89,12 @@ vector<double> back_substitution(vector<vector<double> > mat)
     
 }
 
-pair<vector<vector<double> >, vector<double> > gauss_elemination(vector<vector<double> > mat)
+pair<bool, vector<double> > gauss_elemination(vector<vector<double> > mat)
 {
     int n_row = mat.size();
     int n_col = mat[0].size();
     int k = 0, l = 0;
+    print2D<double>(mat);
     while(l < n_col-2)
     {
         if(mat[k][l] != 0)
@@ -113,12 +115,12 @@ pair<vector<vector<double> >, vector<double> > gauss_elemination(vector<vector<d
         else
         {
             bool column_change = true;
-            pair<double,int> max (mat[k][l], k);
+            pair<double,int> max (abs(mat[k][l]), k);
             for(int i = k+1; i < n_row; i++)
             {
-                if(mat[i][l] != 0 && max.first<mat[i][l])
+                if(mat[i][l] != 0 && max.first<abs(mat[i][l]))
                 {
-                    max.first = mat[i][l];
+                    max.first = abs(mat[i][l]);
                     max.second = i;
                     column_change = false;
                 }
@@ -130,7 +132,20 @@ pair<vector<vector<double> >, vector<double> > gauss_elemination(vector<vector<d
                 l++;
         }    
     }
-    return make_pair(mat, back_substitution(mat));
+    cout<<"NEW"<<endl;
+    print2D<double>(mat);
+    bool status = true;
+    for(int i = 0; i < n_row; i++)
+    {
+        if(mat[i][i] == 0)
+        {
+            status = false;
+            vector<double> dummy;
+            return make_pair(status, dummy);
+        }
+    }
+    
+    return make_pair(status, back_substitution(mat));
 }
 
 vector<vector<double> > create_data_aug_mat(vector<vector<double> > full_mat, vector<int> indices)
@@ -178,6 +193,7 @@ int main(int argc, char const *argv[])
         cin>>arr[r];
         cout<<"enter C"<<endl;
         cin>>arr[r+1]; 
+        cout<<"Got Eqn: "<<i<<endl;
         eqns.push_back(arr);
     }
     cout<<"Equations Data"<<endl;
@@ -194,41 +210,48 @@ int main(int argc, char const *argv[])
     print2D<int>(comb_ind);
     int comb = comb_ind.size();
 
-    cout<<"Computing Basic Solutions"<<endl;
-    vector<vector<double> > basic_sols;
+    cout<<"Computing Solutions"<<endl;
+    vector<vector<double> > sols;
     for(int i=0; i<comb; i++)
     {
         vector<double> sol(n_var, 0.0);
         vector<int> indices = comb_ind[i];
-        //print1D<int>(indices);
+        print1D<int>(indices);
         vector<vector<double> > mat_aug = create_data_aug_mat(eqns, indices);
-        //print2D<double>(mat_aug);
-        pair<vector<vector<double> >, vector<double> > p = gauss_elemination(mat_aug);
+        pair<bool, vector<double> > p = gauss_elemination(mat_aug);
         
+        if(!p.first)
+            continue;
+
         for(int j = 0; j < indices.size(); j++)
             sol[indices[j]] = p.second[j];
-        //print1D<double>(sol);
-        basic_sols.push_back(sol);
+
+        sols.push_back(sol);
     }
-    print2D<double>(basic_sols);
-    cout<<"Computing Basic Feasible Solutions"<<endl;
+    print2D<double>(sols);
+    cout<<"Computing Basic & Basic Feasible Solutions"<<endl;
     vector<vector<double> > basic_fsols;
-    
-    for(int i = 0; i < basic_sols.size(); i++)
+    vector<vector<double> > basic_sols;
+    for(int i = 0; i < sols.size(); i++)
     {
        bool flag = true;
-       for(int j = 0; j < basic_sols[0].size(); j++)
-       {
-           if(basic_sols[i][j]<0)
+        for(int j = 0; j < sols[0].size(); j++)
+        {
+           if(sols[i][j]<0)
            {
                 flag = false;
                 break;
            }
-       }
-       if (flag)
-            basic_fsols.push_back(basic_sols[i]);
+        }
+        if (flag)
+            basic_fsols.push_back(sols[i]);
+        else
+            basic_sols.push_back(sols[i]);
        
     }
+    cout<<"Basic Feasible Solutions"<<endl;
     print2D<double>(basic_fsols);
+    cout<<"Basic Solutions"<<endl;
+    print2D<double>(basic_sols);
     return 0;
 }
