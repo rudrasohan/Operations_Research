@@ -139,15 +139,14 @@ vector<vector<double> > create_data_aug_mat(vector<vector<double> > full_mat,
   return mat;
 }
 void print_simplex_table(vector<vector<double> > mat,
-                         pair<vector<int>, vector<int> > format,
-                         vector<double> c) {
-  int n_rows = mat.size();
+                         pair<vector<int>, vector<int> > format) {
+  int n_rows = mat.size()-1;
   int n_cols = mat[0].size();
   for (int i = 0; i < format.first.size(); i++) {
     if (format.first[i] <= format.first.size())
-      cout << "x" << format.first[i] << "\t";
+      cout << "-x" << format.first[i] << "\t";
     else
-      cout << "Z" << (format.first[i] - format.first.size()) << "\t";
+      cout << "-Z" << (format.first[i] - format.first.size()) << "\t";
   }
   cout << "1";
   cout << endl;
@@ -162,13 +161,12 @@ void print_simplex_table(vector<vector<double> > mat,
     cout << endl;
   }
 
-  for (int i = 0; i < c.size(); i++) cout << c[i] << "\t";
+  for (int i = 0; i < n_cols; i++) cout << mat[mat.size()-1][i] << "\t";
   cout << endl;
 }
 
 void simplex_solver(vector<vector<double> > full_eqns,
                     vector<double> full_obj) {
-  vector<double> cjzj(full_obj.size(), 0.0);
   // vector<double> sol(full_eqns[0].size(), 0.0);
   int n = full_eqns.size();
   int r = full_eqns[0].size() - 1;
@@ -178,7 +176,9 @@ void simplex_solver(vector<vector<double> > full_eqns,
   for (int i = 0; i < sol_nb.size(); i++) sol_nb[i] = i + 1;
   for (int i = 0; i < sol_b.size(); i++) sol_b[i] = i + 1 + r;
   indices = make_pair(sol_nb, sol_b);
-  full_obj.push_back(0.0);
+  full_eqns.push_back(full_obj);
+  print_simplex_table(full_eqns, indices);
+  /*
   cout << "a:Print Initial Table \nb:Print Non Basic Variables \nc:Print Basic "
           "Variables \nd:Print Theta"
        << endl;
@@ -186,7 +186,7 @@ void simplex_solver(vector<vector<double> > full_eqns,
   cin >> ch;
   switch (ch) {
     case 'a': {
-      print_simplex_table(full_eqns, indices, full_obj);
+      print_simplex_table(full_eqns, indices);
       break;
     }
     case 'b': {
@@ -196,6 +196,7 @@ void simplex_solver(vector<vector<double> > full_eqns,
         else
           cout << "Z" << (indices.first[i] - indices.first.size()) << "\t";
       }
+      break;
     }
     case 'c': {
       for (int i = 0; i < indices.second.size(); i++) {
@@ -227,8 +228,42 @@ void simplex_solver(vector<vector<double> > full_eqns,
       cout << "MIN_theta_POSE = " << min_theta_pose << endl;
       cout << "Pivot Element = " << full_eqns[min_theta_pose][min_pos] << endl;
     }
-  }
+  }*/
 
+  vector<double> thetas(sol_b.size(), 0.0);
+  int obj_row = full_eqns.size() - 1;
+  cout << "Computing Thetas" << endl;
+  int min_pos = 0;
+  for (int i = 0; i < full_obj.size() - 1; i++) {
+    if (full_eqns[obj_row][min_pos] > full_eqns[obj_row][i] && full_eqns[obj_row][i]<0) min_pos = i;
+    }
+  for (int i = 0; i < thetas.size(); i++)
+    thetas[i] = full_eqns[i][r] / full_eqns[i][min_pos];
+  cout << "MIN_POSE = " << min_pos << endl;
+  cout << "THETAS: ";
+  print1D(thetas);
+  int min_theta_pose = 0;
+  for (int i = 0; i < thetas.size(); i++) {
+    if (thetas[i] < 0) continue;
+    if (thetas[min_theta_pose] > thetas[i]) min_theta_pose = i;
+    }
+  cout << "MIN_theta_POSE = " << min_theta_pose << endl;
+  cout << "Pivot Element = " << full_eqns[min_theta_pose][min_pos] << endl;
+  double pivot = full_eqns[min_theta_pose][min_pos];
+  pair<int, int> pv(min_theta_pose, min_pos);
+
+  for(int i = 0; i < full_eqns[0].size(); i++) {
+    full_eqns[pv.first][i] /= pivot;
+  }
+  for(int i = 0; i < full_eqns.size(); i++) {
+    full_eqns[i][pv.second] /= -pivot;
+  }
+  int temp = 0;
+  temp = indices.first[pv.first];
+  indices.first[pv.first] = indices.second[pv.second];
+  indices.second[pv.second] = temp;
+  print_simplex_table(full_eqns, indices);
+  
   /*
   double pivot = full_eqns[min_theta_pose][min_pos];
   full_eqns[min_theta_pose][min_pos] = -pivot;
@@ -348,6 +383,7 @@ int main(int argc, char const *argv[]) {
     opt_full_splx[i] = -temp;
     optimal_eq.push_back(-temp);
   }
+  optimal_eq.push_back(0.0);
   print1D(opt_full_splx);
 
   cout << "Only The first " << r
