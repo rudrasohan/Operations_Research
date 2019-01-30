@@ -140,7 +140,7 @@ vector<vector<double> > create_data_aug_mat(vector<vector<double> > full_mat,
 }
 void print_simplex_table(vector<vector<double> > mat,
                          pair<vector<int>, vector<int> > format) {
-  int n_rows = mat.size()-1;
+  int n_rows = mat.size() - 1;
   int n_cols = mat[0].size();
   for (int i = 0; i < format.first.size(); i++) {
     if (format.first[i] <= format.first.size())
@@ -161,13 +161,13 @@ void print_simplex_table(vector<vector<double> > mat,
     cout << endl;
   }
 
-  for (int i = 0; i < n_cols; i++) cout << mat[mat.size()-1][i] << "\t";
+  for (int i = 0; i < n_cols; i++) cout << mat[mat.size() - 1][i] << "\t";
   cout << endl;
 }
 
 void simplex_solver(vector<vector<double> > full_eqns,
                     vector<double> full_obj) {
-  // vector<double> sol(full_eqns[0].size(), 0.0);
+  // Initialization
   int n = full_eqns.size();
   int r = full_eqns[0].size() - 1;
   pair<vector<int>, vector<int> > indices;
@@ -177,123 +177,210 @@ void simplex_solver(vector<vector<double> > full_eqns,
   for (int i = 0; i < sol_b.size(); i++) sol_b[i] = i + 1 + r;
   indices = make_pair(sol_nb, sol_b);
   full_eqns.push_back(full_obj);
+  cout << "Initial Table" << endl;
   print_simplex_table(full_eqns, indices);
-  /*
-  cout << "a:Print Initial Table \nb:Print Non Basic Variables \nc:Print Basic "
-          "Variables \nd:Print Theta"
+  // book-keeping
+  int count = 0;
+  vector<vector<vector<double> > > table_cache;
+  vector<pair<vector<int>, vector<int> > > index_cache;
+  vector<vector<double> > thetas_cache;
+  table_cache.push_back(full_eqns);
+  index_cache.push_back(indices);
+  bool unbounded = true;
+  // iters
+  while (1) {
+    vector<double> thetas(sol_b.size(), 0.0);
+    int obj_row = full_eqns.size() - 1;
+    cout << "Computing Thetas" << endl;
+    int min_pos = 0;
+    bool done = true;
+    for (int i = 0; i < full_obj.size() - 1; i++) {
+      if (full_eqns[obj_row][min_pos] >= full_eqns[obj_row][i] &&
+          full_eqns[obj_row][i] < 0) {
+        min_pos = i;
+        done = false;
+      }
+    }
+    unbounded = true;
+    for (int i = 0; i < full_eqns.size(); i++) {
+      if (full_eqns[i][min_pos] > 0) unbounded = false;
+    }
+
+    if (done || unbounded) {
+      break;
+    }
+
+    else
+      count++;
+
+    for (int i = 0; i < thetas.size(); i++)
+      thetas[i] = full_eqns[i][r] / full_eqns[i][min_pos];
+    cout << "MIN_POSE = " << min_pos << endl;
+    cout << "THETAS: ";
+    print1D(thetas);
+    thetas_cache.push_back(thetas);
+    int min_theta_pose = 0;
+
+    for (int i = 0; i < thetas.size(); i++) {
+      if (thetas[i] < 0) continue;
+      if (thetas[min_theta_pose] >= thetas[i]) {
+        min_theta_pose = i;
+      }
+    }
+
+    cout << "MIN_theta_POSE = " << min_theta_pose << endl;
+    cout << "Pivot Element = " << full_eqns[min_theta_pose][min_pos] << endl;
+    double pivot = full_eqns[min_theta_pose][min_pos];
+    pair<int, int> pv(min_theta_pose, min_pos);
+
+    for (int i = 0; i < full_eqns[0].size(); i++) {
+      full_eqns[pv.first][i] /= pivot;
+    }
+    for (int i = 0; i < full_eqns.size(); i++) {
+      full_eqns[i][pv.second] /= -pivot;
+    }
+    int temp = 0;
+    temp = indices.first[pv.second];
+    indices.first[pv.second] = indices.second[pv.first];
+    indices.second[pv.first] = temp;
+    index_cache.push_back(indices);
+    for (int i = 0; i < full_eqns.size(); i++) {
+      for (int j = 0; j < full_eqns[0].size(); j++) {
+        if (i == pv.first || j == pv.second) continue;
+        double p = 0.0, q = 0.0, r = 0.0, s = 0.0;
+        p = full_eqns[pv.first][pv.second];
+        s = full_eqns[i][j];
+        r = full_eqns[pv.first][j];
+        q = full_eqns[i][pv.second];
+        full_eqns[i][j] = (p * s - q * r) / p;
+      }
+    }
+    table_cache.push_back(full_eqns);
+    print_simplex_table(full_eqns, indices);
+  }
+  cout << "DONE" << endl;
+  cout << "a: Number of Iters \nb: Non Basic Vals \nc: Basic with Min_ratio\n"
+          "d: Simplex Table \ne: Optimal Solution \nx: To end"
        << endl;
-  char ch;
-  cin >> ch;
-  switch (ch) {
-    case 'a': {
-      print_simplex_table(full_eqns, indices);
-      break;
-    }
-    case 'b': {
-      for (int i = 0; i < indices.first.size(); i++) {
-        if (indices.first[i] <= indices.first.size())
-          cout << "x" << indices.first[i] << "\t";
-        else
-          cout << "Z" << (indices.first[i] - indices.first.size()) << "\t";
+  while (1) {
+    char ch;
+    cin >> ch;
+    if (ch == 'x') break;
+    switch (ch) {
+      case 'a': {
+        cout << "Iterations: " << count << endl;
+        break;
       }
-      break;
-    }
-    case 'c': {
-      for (int i = 0; i < indices.second.size(); i++) {
-        if (indices.second[i] <= indices.first.size())
-          cout << "x" << indices.second[i] << "\t";
-        else
-          cout << "Z" << (indices.second[i] - indices.first.size()) << "\t";
-      }
-      break;
-    }
-    case 'd': {
-      vector<double> thetas(sol_b.size(), 0.0);
-      cout << "Computing Thetas" << endl;
-      int min_pos = 0;
-      for (int i = 1; i < full_obj.size(); i++) {
-        if (full_obj[min_pos] > full_obj[i]) min_pos = i;
-      }
-      for (int i = 0; i < thetas.size(); i++)
-        thetas[i] = full_eqns[i][r] / full_eqns[i][min_pos];
-      cout << "MIN_POSE = " << min_pos << endl;
-      cout << "THETAS: ";
-      print1D<double>(thetas);
-      int min_theta_pose = 0;
-      double min = 1e+4;
-      for (int i = 0; i < thetas.size(); i++) {
-        if (thetas[i] < 0) continue;
-        if (thetas[min_theta_pose] > thetas[i]) min_theta_pose = i;
-      }
-      cout << "MIN_theta_POSE = " << min_theta_pose << endl;
-      cout << "Pivot Element = " << full_eqns[min_theta_pose][min_pos] << endl;
-    }
-  }*/
 
-  vector<double> thetas(sol_b.size(), 0.0);
-  int obj_row = full_eqns.size() - 1;
-  cout << "Computing Thetas" << endl;
-  int min_pos = 0;
-  for (int i = 0; i < full_obj.size() - 1; i++) {
-    if (full_eqns[obj_row][min_pos] > full_eqns[obj_row][i] && full_eqns[obj_row][i]<0) min_pos = i;
-    }
-  for (int i = 0; i < thetas.size(); i++)
-    thetas[i] = full_eqns[i][r] / full_eqns[i][min_pos];
-  cout << "MIN_POSE = " << min_pos << endl;
-  cout << "THETAS: ";
-  print1D(thetas);
-  int min_theta_pose = 0;
-  for (int i = 0; i < thetas.size(); i++) {
-    if (thetas[i] < 0) continue;
-    if (thetas[min_theta_pose] > thetas[i]) min_theta_pose = i;
-    }
-  cout << "MIN_theta_POSE = " << min_theta_pose << endl;
-  cout << "Pivot Element = " << full_eqns[min_theta_pose][min_pos] << endl;
-  double pivot = full_eqns[min_theta_pose][min_pos];
-  pair<int, int> pv(min_theta_pose, min_pos);
-
-  for(int i = 0; i < full_eqns[0].size(); i++) {
-    full_eqns[pv.first][i] /= pivot;
-  }
-  for(int i = 0; i < full_eqns.size(); i++) {
-    full_eqns[i][pv.second] /= -pivot;
-  }
-  int temp = 0;
-  temp = indices.first[pv.first];
-  indices.first[pv.first] = indices.second[pv.second];
-  indices.second[pv.second] = temp;
-  print_simplex_table(full_eqns, indices);
-  
-  /*
-  double pivot = full_eqns[min_theta_pose][min_pos];
-  full_eqns[min_theta_pose][min_pos] = -pivot;
-  for(int i=0; i<n; i++)
-      full_eqns[i][min_pos] = full_eqns[i][min_pos]/(-pivot);
-  for(int i=0; i<r; i++)
-      full_eqns[min_theta_pose][i] = full_eqns[min_theta_pose][i]/pivot;
-  full_eqns[min_theta_pose][full_eqns[0].size()-1] /= pivot;
-  int temp = 0;
-  temp = indices.first[min_pos];
-  indices.first[min_pos] = indices.second[min_theta_pose];
-  indices.second[min_theta_pose] = temp;*/
-  /*
-  for(int i=0; i < n; i++)
-  {
-      for(int j=0; j < n; j++)
-      {
-          if(i == min_theta_pose || j == min_pos)
-              continue;
+      case 'b': {
+        cout << "Enter ith iter" << endl;
+        int i;
+        cin >> i;
+        i = i + 1;
+        cout << "Non Basic Solutions" << endl;
+        // print1D<int>(index_cache[i-1].first);
+        for (int j = 0; j < index_cache[i - 1].first.size(); j++) {
+          if (index_cache[i - 1].first[j] <= index_cache[i - 1].first.size())
+            cout << "-x" << index_cache[i - 1].first[j] << "\t";
           else
-          {
-              double p=0.0,q=0.0,r=0.0,s=0.0;
-              s = full_eqns[i][j];
-              p = pivot;
-              q
-
-          }
+            cout << "-Z" << (index_cache[i - 1].first[j] -
+                             index_cache[i - 1].first.size())
+                 << "\t";
+        }
+        cout << endl;
+        cout << "COMPUTE :" << endl;
+        for (int j = 0; j < full_eqns.size(); j++) {
+          cout << table_cache[i - 1][full_eqns[0].size() - 1][j] << "\t";
+        }
+        cout << endl;
+        break;
       }
+
+      case 'c': {
+        cout << "Enter ith iter" << endl;
+        int i;
+        cin >> i;
+        i = i + 1;
+        cout << "Basic Solutions" << endl;
+        print1D<int>(index_cache[i - 1].second);
+        for (int j = 0; j < index_cache[i - 1].second.size(); j++) {
+          if (index_cache[i - 1].second[j] <= index_cache[i - 1].first.size())
+            cout << "x" << index_cache[i - 1].second[j] << "\t";
+          else
+            cout << "Z" << (index_cache[i - 1].second[j] -
+                            index_cache[i - 1].first.size())
+                 << "\t";
+        }
+        cout << endl;
+        cout << "Thetas" << endl;
+        print1D<double>(thetas_cache[i - 2]);
+        cout << "MIN RATIO ";
+        int min_theta_pose = 0;
+        for (int i = 0; i < thetas_cache[i - 2].size(); i++) {
+          if (thetas_cache[i - 2][i] < 0) continue;
+          if (thetas_cache[i - 2][min_theta_pose] >= thetas_cache[i - 2][i]) {
+            min_theta_pose = i;
+          }
+        }
+        cout << thetas_cache[i - 2][min_theta_pose] << endl;
+        break;
+      }
+
+      case 'd': {
+        cout << "Enter i for ith table" << endl;
+        int i;
+        cin >> i;
+        print_simplex_table(table_cache[i - 1], index_cache[i - 1]);
+        cout << "Basic Feasible Solutions" << endl;
+        print1D<int>(index_cache[i - 1].second);
+        cout << "Thetas" << endl;
+        print1D<double>(thetas_cache[i - 2]);
+        break;
+      }
+
+      case 'e': {
+        bool infeasible = false;
+        for (int j = 0; j < indices.second.size(); j++) {
+          if (full_eqns[j][full_eqns[0].size() - 1] < 0) infeasible = true;
+        }
+        if (infeasible) {
+          cout << "Solution is infeasible" << endl;
+        }
+
+        if (unbounded) {
+          cout << "Solution is Unbounded" << endl;
+        }
+
+        if (!infeasible && !unbounded) {
+          cout << "Optimal Value: " << full_eqns[full_eqns.size() - 1]
+                                                [full_eqns[0].size() - 1]
+               << endl;
+          for (int j = 0; j < indices.first.size(); j++) {
+            if (indices.first[j] <= indices.first.size())
+              cout << "x" << indices.first[j] << ":\t";
+            else
+              cout << "Z" << (indices.first[j] - indices.first.size()) << ":\t";
+            cout << "0.0"
+                 << "\t";
+          }
+          cout << endl;
+
+          for (int j = 0; j < indices.second.size(); j++) {
+            if (indices.second[j] <= indices.first.size())
+              cout << "x" << indices.second[j] << ":\t";
+            else
+              cout << "Z" << (indices.second[j] - indices.first.size())
+                   << ":\t";
+            cout << full_eqns[j][full_eqns[0].size() - 1] << "\t";
+          }
+          cout << endl;
+        }
+        break;
+      }
+
+      default: { cout << "Invalid Option"; }
+    }
   }
-  print_simplex_table(full_eqns, indices, full_obj);*/
 }
 
 int main(int argc, char const *argv[]) {
