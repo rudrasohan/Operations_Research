@@ -8,7 +8,8 @@ using namespace std;
 double global_best = 0;
 int ele_num = 0;
 vector<double> finale;
-vector<vector<int> > comb_ind;
+vector<vector<double> > final_tableu;
+pair<vector<int>, vector<int> > final_indices;
 
 template <typename T>
 void print2D(vector<vector<T> > mat) {
@@ -262,6 +263,8 @@ pair<bool, pair<double, vector<double> > > simplex_solver(vector<vector<double> 
        cout<<"DONE"<<endl;
        //print2D(eqns_final);
        cout<<endl;
+       final_tableu = eqns_final;
+       final_indices = indices;
        //print1D(optim.second.second);
        //cout<<optim.second.first<<endl;
         return optim;
@@ -353,19 +356,20 @@ pair<bool, pair<double, vector<double> > > simplex_solver(vector<vector<double> 
   }*/
 }
 
-double dual_simplex_solver(vector<vector<double> > full_eqns,
-                      vector<double> full_obj, int status) {
+pair<vector<vector<double> >,pair<vector<int>, vector<int> > >  dual_simplex_solver(vector<vector<double> > full_eqns,
+                      vector<double> full_obj, pair<vector<int>, vector<int> > p, int status) {
   // Initialization
-  int n = full_eqns.size();         // rows
+  int n = full_eqns.size() - 1;         // rows
   int r = full_eqns[0].size() - 1;  // cols
-  pair<vector<int>, vector<int> > indices;
+  pair<vector<int>, vector<int> > indices = p;/*
   vector<int> sol_nb(r, 0);
   vector<int> sol_b(n, 0);
   for (int i = 0; i < sol_nb.size(); i++) sol_nb[i] = i + 1;  // the zero vars
   for (int i = 0; i < sol_b.size(); i++)
     sol_b[i] = i + 1 + r;  // the non zero vars
   indices = make_pair(sol_nb, sol_b);
-  full_eqns.push_back(full_obj);
+  //full_eqns.push_back(full_obj);
+  */
   cout << "Initial Table" << endl;
   print_simplex_table(full_eqns, indices);
   // book-keeping
@@ -386,7 +390,7 @@ double dual_simplex_solver(vector<vector<double> > full_eqns,
     cout << "Computing Thetas" << endl;
     int min_pos = 0;
     bool done = true;
-
+    cout<<"PP!"<<endl;
     for (int i = 0; i < full_eqns.size() - 1; i++) {
       if (full_eqns[min_pos][last_col] >= full_eqns[i][last_col] &&
           full_eqns[i][last_col] < 0) {
@@ -394,19 +398,22 @@ double dual_simplex_solver(vector<vector<double> > full_eqns,
         done = false;
       }
     } 
+    cout<<"PP2"<<endl;
     unbounded = true;
     for (int i = 0; i < full_eqns[0].size(); i++) {
       if (full_eqns[min_pos][i] < 0) unbounded = false;
     }
-
+    cout<<"PP3"<<endl;
     if (done || unbounded) {
+      
+        cout<<"VERY BAD"<<unbounded<<endl;
       if (done) unbounded = false;
       break;
     }
 
     else
       count++;
-
+    cout<<"GOT YOU"<<endl;
     for (int i = 0; i < thetas.size(); i++) {
       thetas[i] = abs(full_eqns[obj_row][i] / full_eqns[min_pos][i]);
       thetas_no_mod[i] = (full_eqns[obj_row][i] / full_eqns[min_pos][i]);
@@ -466,6 +473,11 @@ double dual_simplex_solver(vector<vector<double> > full_eqns,
     table_cache.push_back(full_eqns);
     print_simplex_table(full_eqns, indices);
   }
+  //final_tableu = full_eqns;
+  //final_indices = indices;
+  cout<<"TABLE OF THE DAY"<<endl;
+  //print_simplex_table(final_tableu, final_indices);
+  return make_pair(full_eqns, final_indices);
   /*
   cout << "DONE" << endl;
   cout << "a: Number of Iters \nb: Leaving Vars \nc: Entering vars (deltaj/Xr) "
@@ -643,31 +655,42 @@ void branch_and_bound_recurse(vector<vector<double> > full_eqns,
     }   
 }
 
-int max_index(vector<double> v)
-{
-  double max = 0.0;
-  int pose = 0;
-  for(int i = 0; i < v.size(); i++)
-  {
-    
-  }
-  
-}
-
 void cutting_plane(vector<vector<double> > full_eqns,
                     vector<double> full_obj)
 {
   pair<bool, pair<double, vector<double> > > sol_init = simplex_solver(full_eqns, full_obj);
   print1D(sol_init.second.second);
-  vector<double> v = sol_init.second.second;
-  vector<double> f(v.size(),0.0);
-  cout<<sol_init.second.first<<endl;
+  vector<double> f(final_tableu.size() - 1,0.0);
   bool f_flag = true;
+  bool n_flag=true;
+  vector<vector<double> > f_tableu;
+  pair<vector<int>, vector<int> > f_indices;
+  do
+  {
+    /* code */
+  
+  if (n_flag)
+  {
+    f_tableu = final_tableu;
+    f_indices = final_indices;
+    n_flag = false;
+  }
+  else
+  {
+    
+  }
+  
+  
+  int col = f_tableu[0].size() - 1;
+  int row = f_tableu.size() - 1;
+  cout<<f_tableu[row][col]<<endl;
+  
   double max = 0.0;
   int max_pose = 0;
-  for(int i = 0; i < v.size(); i++)
+  f_flag = true;
+  for(int i = 0; i < row; i++)
     {
-      f[i] = v[i] - floor(v[i]);
+      f[i] = f_tableu[i][col] - floor(f_tableu[i][col]);
       if (f[i] != 0.0)
         f_flag = false;
       if (f[i]>max)
@@ -676,7 +699,29 @@ void cutting_plane(vector<vector<double> > full_eqns,
           max_pose = i;
         }
     }
-    
+
+    if(f_flag)
+      break;
+
+  vector<double> v(col + 1,0.0);
+  for(int i = 0; i < v.size(); i++)
+  {
+    v[i] = -(f_tableu[max_pose][i] - floor(f_tableu[max_pose][i]));
+  }
+  f_tableu.insert(f_tableu.end()-1,v);
+  cout<<"FOR SOME FUN"<<endl;
+  print2D(f_tableu);
+  print2D(f_tableu);
+  cout <<"THE FINAL"<<endl;
+  f_indices.second.push_back(f_indices.first.size() + f_indices.second.size() + 1);
+  cout<<"PRINTING TABLE"<<endl;
+  print_simplex_table(f_tableu, f_indices);
+  cout<<"STARTING DUAL"<<endl;
+  pair<vector<vector<double> >,pair<vector<int>, vector<int> > > final_one = dual_simplex_solver(f_tableu, full_obj, f_indices, 1);
+  f_tableu = final_one.first;
+  f_indices = final_one.second;
+  } while (!f_flag);
+  
   
 }
 /*
