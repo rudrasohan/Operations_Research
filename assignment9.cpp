@@ -8,8 +8,8 @@ using namespace std;
 double global_best = 0;
 int ele_num = 0;
 vector<double> finale;
-vector<vector<double> > final_tableu;
-pair<vector<int>, vector<int> > final_indices;
+vector<vector<vector<double> > > final_tableu;
+vector<pair<vector<int>, vector<int> > > final_indices;
 
 template <typename T>
 void print2D(vector<vector<T> > mat) {
@@ -263,8 +263,8 @@ pair<bool, pair<double, vector<double> > > simplex_solver(vector<vector<double> 
        cout<<"DONE"<<endl;
        //print2D(eqns_final);
        cout<<endl;
-       final_tableu = eqns_final;
-       final_indices = indices;
+       final_tableu.push_back(eqns_final);
+       final_indices.push_back(indices);
        //print1D(optim.second.second);
        //cout<<optim.second.first<<endl;
         return optim;
@@ -477,7 +477,7 @@ pair<vector<vector<double> >,pair<vector<int>, vector<int> > >  dual_simplex_sol
   //final_indices = indices;
   cout<<"TABLE OF THE DAY"<<endl;
   //print_simplex_table(final_tableu, final_indices);
-  return make_pair(full_eqns, final_indices);
+  return make_pair(full_eqns, indices);
   /*
   cout << "DONE" << endl;
   cout << "a: Number of Iters \nb: Leaving Vars \nc: Entering vars (deltaj/Xr) "
@@ -659,16 +659,18 @@ void cutting_plane(vector<vector<double> > full_eqns,
                     vector<double> full_obj)
 {
   pair<bool, pair<double, vector<double> > > sol_init = simplex_solver(full_eqns, full_obj);
+  cout<<"HAHAHAH"<<endl;
   print1D(sol_init.second.second);
-  vector<double> f(final_tableu.size() - 1,0.0);
+  
   bool f_flag = true;
-  bool n_flag=true;
+  int k = 0;
+  //bool n_flag=true;
   vector<vector<double> > f_tableu;
   pair<vector<int>, vector<int> > f_indices;
   do
   {
     /* code */
-  
+  /*
   if (n_flag)
   {
     f_tableu = final_tableu;
@@ -678,50 +680,61 @@ void cutting_plane(vector<vector<double> > full_eqns,
   else
   {
     
-  }
+  }*/
   
-  
-  int col = f_tableu[0].size() - 1;
-  int row = f_tableu.size() - 1;
-  cout<<f_tableu[row][col]<<endl;
-  
+  vector<vector<double> > current_tableu;
+  pair<vector<int>, vector<int> > current_indices;
+  current_tableu = final_tableu[final_tableu.size() -1];
+  current_indices = final_indices[final_indices.size() -1];
+  vector<double> f(current_tableu.size() - 1,0.0);
+  int col = current_tableu[0].size() - 1;
+  int row = current_tableu.size() - 1;
+  cout<<current_tableu[row][col]<<endl;
+  k++;
   double max = 0.0;
   int max_pose = 0;
   f_flag = true;
+  cout<<"F Diaries"<<endl;
   for(int i = 0; i < row; i++)
     {
-      f[i] = f_tableu[i][col] - floor(f_tableu[i][col]);
-      if (f[i] != 0.0)
+      f[i] = current_tableu[i][col] - floor(current_tableu[i][col]);
+      if (f[i] >= 1e-14 && f[i] < 0.9)
+      {
+        cout<<f[i]<<" , "<<i<<endl;
         f_flag = false;
+      }
       if (f[i]>max)
         {
           max = f[i];
           max_pose = i;
         }
     }
-
+    print1D(f);
     if(f_flag)
+    {
+      cout<<"DONE STATUS "<<f_flag<<endl;
+      cout <<"FINALE"<<endl;
+      print_simplex_table(current_tableu, current_indices);
       break;
-
+    }
   vector<double> v(col + 1,0.0);
   for(int i = 0; i < v.size(); i++)
   {
-    v[i] = -(f_tableu[max_pose][i] - floor(f_tableu[max_pose][i]));
+    v[i] = -(current_tableu[max_pose][i] - floor(current_tableu[max_pose][i]));
   }
-  f_tableu.insert(f_tableu.end()-1,v);
+  current_tableu.insert(current_tableu.end()-1,v);
   cout<<"FOR SOME FUN"<<endl;
-  print2D(f_tableu);
-  print2D(f_tableu);
+  print2D(current_tableu);
+  //print2D(current_tableu);
   cout <<"THE FINAL"<<endl;
-  f_indices.second.push_back(f_indices.first.size() + f_indices.second.size() + 1);
+  current_indices.second.push_back(current_indices.first.size() + current_indices.second.size() + 1);
   cout<<"PRINTING TABLE"<<endl;
-  print_simplex_table(f_tableu, f_indices);
+  print_simplex_table(current_tableu, current_indices);
   cout<<"STARTING DUAL"<<endl;
-  pair<vector<vector<double> >,pair<vector<int>, vector<int> > > final_one = dual_simplex_solver(f_tableu, full_obj, f_indices, 1);
-  f_tableu = final_one.first;
-  f_indices = final_one.second;
+  pair<vector<vector<double> >,pair<vector<int>, vector<int> > > final_one = dual_simplex_solver(current_tableu, full_obj, current_indices, 1);
+  final_tableu.push_back(final_one.first);
+  final_indices.push_back(final_one.second);
   } while (!f_flag);
-  
   
 }
 /*
