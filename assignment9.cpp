@@ -832,11 +832,19 @@ int main(int argc, char const *argv[]) {
   }
   optimal_eq.push_back(0.0);
   print1D(opt_full_splx);
-  //branch_and_bound_recurse(eqns, optimal_eq, 0);
-  cutting_plane(eqns, optimal_eq);
+  int num = 0;
+  cout<<"Enter 1 for cutting plane \n2 for branch and bound method"<<endl;
+  cin>>num;
+  if (num == 2)
+  {
+    branch_and_bound_recurse(eqns, optimal_eq, 0);
+     cout<<"THE BEST OF THE BEST"<<endl;
+    cout<<"OPTIMAL VAL"<<global_best<<endl;
+    print1D(finale);
+  }
+  if (num == 1)
+    cutting_plane(eqns, optimal_eq);
   //simplex_solver(eqns, optimal_eq);
-  cout<<"THE BEST OF THE BEST"<<endl;
-  cout<<"OPTIMAL VAL"<<global_best<<endl;
-  print1D(finale);
+ 
   return 0;
 }
