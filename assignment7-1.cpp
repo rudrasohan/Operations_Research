@@ -131,11 +131,13 @@ double simplex_solver(vector<vector<double> > full_eqns,
     print1D(thetas);
     thetas_cache.push_back(thetas_no_mod);
     int min_theta_pose = 0;
+    double mmin = 1e6;
 
     for (int i = 0; i < thetas.size(); i++) {
       if (full_eqns[min_pos][i] > 0) continue;
-      if (thetas[min_theta_pose] >= thetas[i]) {
+      if (mmin >= thetas[i]) {
         min_theta_pose = i;
+        mmin = thetas[min_theta_pose];
       }
     }
     // cout<<"MIN ELE COL LOC"<<min_theta_pose<<endl;
@@ -333,11 +335,14 @@ int main(int argc, char const *argv[]) {
     double temp = 0.0;
     cin >> temp;
     opt_full_splx[i] = -temp * eq_flag;
+    if (var_record[i] == 1) 
+      optimal_eq.push_back(-opt_full_splx[i]);
     optimal_eq.push_back(-temp * eq_flag);
   }
+  /*
   for (int i = 0; i < r; i++) {
     if (var_record[i] == 1) optimal_eq.push_back(-opt_full_splx[i]);
-  }
+  }*/
 
   vector<int> dual_var_record(n, 0);
   vector<int> dual_signs(r, 0);
