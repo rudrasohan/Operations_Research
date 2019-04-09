@@ -87,7 +87,11 @@ void simplex_solver(vector<vector<double> > full_eqns,
   }
   vector<double> M_index; ///var1 denotes the length along the row --->
   for (int i = 0; i < var1; i++) {
-    M_index.push_back(-BigM);
+    if (full_eqns[i][cols - 2] == -1)
+      M_index.push_back(-BigM);
+    else {
+      M_index.push_back(0.0);
+    }
   }
   cout << "M_INDEX" << endl;
   print1D<double>(M_index);
