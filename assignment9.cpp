@@ -87,10 +87,11 @@ vector<vector<double> > simplex_solver(vector<vector<double> > full_eqns,
     cout << "Computing Thetas" << endl;
     int min_pos = 0;
     bool done = true;
-    for (int i = 0; i < full_obj.size() - 1; i++) {
-      if (full_eqns[obj_row][min_pos] >= full_eqns[obj_row][i] &&
-          full_eqns[obj_row][i] < 0) {
+    double min = 1e6;
+    for (int i = 0; i < full_obj.size(); i++) {
+      if ((min >= full_eqns[obj_row][i]) && (full_eqns[obj_row][i] < 0)) {
         min_pos = i;
+        min = full_eqns[obj_row][min_pos];
         done = false;
       }
     }
@@ -113,11 +114,12 @@ vector<vector<double> > simplex_solver(vector<vector<double> > full_eqns,
     print1D(thetas);
     thetas_cache.push_back(thetas);
     int min_theta_pose = 0;
-
+    min = 1e6;
     for (int i = 0; i < thetas.size(); i++) {
       if (thetas[i] < 0) continue;
-      if (thetas[min_theta_pose] >= thetas[i]) {
+      if (min >= thetas[i]) {
         min_theta_pose = i;
+        min = thetas[i];
       }
     }
 
