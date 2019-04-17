@@ -310,8 +310,9 @@ void simplex_solver(vector<vector<double> > full_eqns,
       if (thetas[i] < 0) continue;
       if (min_theta > thetas[i]) {
         // cout<<"YAAY"<<endl;
+        cout<<"MIN = "<<min<<endl;
         min_theta_pose = i;
-        min = thetas[min_theta_pose];
+        min_theta = thetas[min_theta_pose];
       }
     }
 
